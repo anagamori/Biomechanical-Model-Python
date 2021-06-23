@@ -15,7 +15,7 @@ plt.rcParams['pdf.fonttype'] = 42
 
 # limb segment modeled as a cylinder with the length of 45 cm and the diameter of 5 cm
 # the proximal segment attaches 5 cm from the end of the distal segment   
-l = 0.45 # segment length [m]
+l = 0.3 # segment length [m]
 r = 0.05/2 # segment radius [m] 
 d = 0.05 # distance from the end to the attachment site [m]
 d_c = 1/2 - d/l # distance from the center of the distal segment to the joint center
@@ -23,17 +23,19 @@ M = 0.1 # segment mass [kg]
 I = 1/12*l**2*M + (d_c*l)**2*M + 1/4*M*r**2 # segment inertia
 b = 0 # external viscosity
 k = 0 # external stiffness
+A = np.array([[0,1],[0,0]])
+B = np.array([[0],[1/I]])
 
 Fs = 10000 # sampling frequency 
 step = 1/float(Fs) # time step
 time_sim = np.arange(0,3,step) # time vector
 
-r_m1 = 0.03 # moment arm of muscle 1 [m]
-r_m2 = -0.03 # moment arm of muscle 2 [m]
+r_m1 = 0.037 # moment arm of muscle 1 [m]
+r_m2 = -0.037 # moment arm of muscle 2 [m]
 
 # Define input to muscle 1 and 2
 U_1 = np.zeros(len(time_sim),dtype = "float") # pulse input to muscle 1
-U_1[int(0.5*Fs):int(3*Fs)] = 1
+U_1[int(0.5*Fs):int(3*Fs)] = 0.1
 U_2 = np.zeros(len(time_sim),dtype = "float") # pulse input to muscle 2
 U_2[int(0.7*Fs):int(1*Fs)] = 0.0
 
@@ -41,6 +43,8 @@ U_2[int(0.7*Fs):int(1*Fs)] = 0.0
 # Kinematic model
 theta = 0 # joint angle 
 theta_dot = 0 # joint angular velocity
+
+x = np.array([[0],[0]])
 
 # vectors for data storage
 theta_vec = np.zeros(len(time_sim),dtype = "float") 
@@ -64,20 +68,18 @@ Y_1 = 0.0;
 S_1 = 0.0;    
 Vce_1 = 0.0;
 Force_tendon_1 = muscle_fns.F_se_function(Lse_1)*m1.F0; # initial tendon force
-muscle_length_1 = Lce_1*(m1.L0/float(100)) # non-normalized muscle length 
-muscle_velocity_1 = 0 # non-normalized muscle velocity
 
 x_1 = np.array([[Lce_1*m1.L0/float(100)],[0.0]])
 
 # vectors for data storage
 U_eff_1_vec = np.zeros(len(time_sim))
 Force_tendon_1_vec = np.zeros(len(time_sim))
-muscle_length_1_vec = np.zeros(len(time_sim))
+Lce_1_vec = np.zeros(len(time_sim))
 Lse_1_vec = np.zeros(len(time_sim))
 Lmt_1_vec = np.zeros(len(time_sim))
 
 # muscle 2
-(Lce_2,Lse_2,Lmt_2) =  muscle_fns.InitialLength(m1)
+(Lce_2,Lse_2,Lmt_2) =  muscle_fns.InitialLength(m2)
 U_eff_2 = 0.0;
 f_int_slow_2 = 0.0;
 f_eff_slow_2 = 0.0;
@@ -90,16 +92,14 @@ Af_fast_2 = 0.0;
 Y_2 = 0.0;
 S_2 = 0.0;    
 Vce_2 = 0.0;
-Force_tendon_2 = muscle_fns.F_se_function(Lse_2)*m1.F0; # initial tendon force
-muscle_length_2 = Lce_2*(m1.L0/float(100)) # non-normalized muscle length 
-muscle_velocity_2 = 0 # non-normalized muscle velocity
+Force_tendon_2 = muscle_fns.F_se_function(Lse_2)*m2.F0; # initial tendon force
 
-x_2 = np.array([[Lce_2*m1.L0/float(100)],[0.0]])
+x_2 = np.array([[Lce_2*m2.L0/float(100)],[0.0]])
 
 # vector for data storage
 U_eff_2_vec = np.zeros(len(time_sim))
 Force_tendon_2_vec = np.zeros(len(time_sim))
-muscle_length_2_vec = np.zeros(len(time_sim))
+Lce_2_vec = np.zeros(len(time_sim))
 Lse_2_vec = np.zeros(len(time_sim))
 Lmt_2_vec = np.zeros(len(time_sim))
 
@@ -170,9 +170,17 @@ for t in range(len(time_sim)):
     
     # Kinematic model
     T = T_1 + T_2
-    theta_ddot = (T - b*theta_dot - k*theta)/I
-    theta_dot = theta_ddot*step + theta_dot
-    theta = theta_dot*step + theta
+    k1 = np.dot(A,x) + B*T 
+    x1 = x + k1*step/2;
+    k2 = np.dot(A,x1) + B*T;
+    x = x + k2*step;
+    
+    theta = x[0]
+    theta_dot = x[1]
+    
+    # theta_ddot = (T - b*theta_dot - k*theta)/I
+    # theta_dot = theta_ddot*step + theta_dot
+    # theta = theta_dot*step + theta
     
     
     # Update the musculotendon length
@@ -184,15 +192,14 @@ for t in range(len(time_sim)):
     T_vec[t] = T
     theta_vec[t] = theta
     theta_dot_vec[t] = theta_dot
-    theta_ddot_vec[t] = theta_ddot
     
     U_eff_1_vec[t] = U_eff_1
     U_eff_2_vec[t] = U_eff_2
     
     Force_tendon_1_vec[t] = Force_tendon_1;
-    muscle_length_1_vec[t] = muscle_length_1 
+    Lce_1_vec[t] = Lce_1 
     Force_tendon_2_vec[t] = Force_tendon_2;
-    muscle_length_2_vec[t] = muscle_length_2
+    Lce_2_vec[t] = Lce_2
     Lmt_1_vec[t] = Lmt_1
     Lmt_2_vec[t] = Lmt_2    
     Lse_1_vec[t] = Lse_1
@@ -221,7 +228,7 @@ fig.savefig("Output.pdf", bbox_inches='tight',transparent=True)
 
 fig = plt.figure()
 ax4 = plt.subplot(3,1,1)
-ax4.plot(time_sim,muscle_length_1_vec*100/m1.L0,time_sim,muscle_length_2_vec*100/m1.L0)
+ax4.plot(time_sim,Lce_1_vec,time_sim,Lce_2_vec)
 ax4.set_xlim([0,np.max(time_sim)])
 ax4.legend(['m1','m2'])
 ax4.set_xlabel('Time (sec)')

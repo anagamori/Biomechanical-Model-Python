@@ -10,7 +10,7 @@ import muscle_model_functions as muscle_fns
 
 L0 = 21.5 # muscle optimal length [cm]
 alpha = 0*np.pi/float(180) # pennation angle [rad]
-L0T = 15.5*1.05; # optimal length of a series-elastic element [cm]
+L0T = 15.5 #*1.05; # optimal length of a series-elastic element [cm]
 Lce_initial = L0; # initial muscle length [cm]
 Lmax = 1.3
     
