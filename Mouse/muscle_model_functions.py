@@ -1,7 +1,7 @@
 """
 muscle_model_functions.py
 @author: Akira Nagamori
-Last update: 6/26/21
+Last update: 6/25/21
 Descriptions: 
     Defines functions associated with muscle model
 """
@@ -14,7 +14,7 @@ def InitialLength(parameter):
     cT = 27.8;
     kT = 0.0047;
     LrT = 0.964;
-    c1 = 23;
+    c1 = 23*6;
     k1 = 0.046;
     Lr1 = 1.17;
     
@@ -213,7 +213,7 @@ def weighting_function(U_eff,U_slow_th,U_fast_th):
 
 # Passive force from passive element 1 (Eq. 15)
 def F_pe_1_function(L,V):
-    c1_pe1 = 23;
+    c1_pe1 = 23*6;
     k1_pe1 = 0.046;
     Lr1_pe1 = 1.17;
     eta = 0.01;
